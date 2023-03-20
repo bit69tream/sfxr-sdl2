@@ -49,7 +49,7 @@ public:
 static Uint32 *ddkscreen32;
 static Uint16 *ddkscreen16;
 static int ddkpitch;
-static int mouse_x, mouse_y, mouse_px, mouse_py;
+static int mouse_x, mouse_y, mouse_px, mouse_py, mouse_xe, mouse_ye;
 static bool mouse_left = false, mouse_right = false, mouse_middle = false;
 static bool mouse_leftclick = false, mouse_rightclick = false, mouse_middleclick = false;
 
@@ -62,7 +62,9 @@ static void sdlupdate ()
 {
 	mouse_px = mouse_x;
 	mouse_py = mouse_y;
-	Uint8 buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+	Uint32 buttons = SDL_GetMouseState(nullptr, nullptr);
+  mouse_x = mouse_xe;
+  mouse_y = mouse_ye;
 	bool mouse_left_p = mouse_left;
 	bool mouse_right_p = mouse_right;
 	bool mouse_middle_p = mouse_middle;
@@ -94,10 +96,14 @@ static void ddkUnlock ()
 // https://wiki.libsdl.org/SDL2/MigrationGuide
 static void ddkSetMode (int width, int height, int bpp, int refreshrate, int fullscreen, const char *title)
 {
+  Uint32 flags = SDL_WINDOW_RESIZABLE;
+  if (fullscreen) {
+    flags |= SDL_WINDOW_FULLSCREEN;
+  }
   sdlwindow = SDL_CreateWindow(title,
                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                width, height,
-                               fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+                               flags);
   VERIFY(sdlwindow);
 
   sdlrenderer = SDL_CreateRenderer(sdlwindow, -1, SDL_RENDERER_ACCELERATED);
@@ -223,6 +229,13 @@ static void loop (void)
 
       case SDL_KEYDOWN:
         keys[e.key.keysym.scancode] = true;
+        break;
+
+      case SDL_MOUSEMOTION:
+        // we set mouse position here because SDL_GetMouseState
+        // doesn't care about the logical renderer size
+        mouse_xe = e.motion.x;
+        mouse_ye = e.motion.y;
         break;
 
 				default: break;
