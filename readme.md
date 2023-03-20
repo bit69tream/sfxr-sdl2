@@ -1,7 +1,7 @@
 This is an unofficial SDL2 port of an official SDL1 linux version.
 
 ----------------------------
-(http://www.drpetter.se/project_sfxr.html)
+<http://www.drpetter.se/project_sfxr.html>
 
 -----------------------------
 sfxr - sound effect generator
@@ -10,6 +10,7 @@ sfxr - sound effect generator
     developed for LD48#10
 -----------------------------
 
+![screenshot](./screenshot.png)
 
 Basic usage:
 
