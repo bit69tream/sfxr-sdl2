@@ -1,3 +1,6 @@
+This is an unofficial SDL2 port of an official SDL1 linux version.
+
+----------------------------
 (http://www.drpetter.se/project_sfxr.html)
 
 -----------------------------
@@ -162,4 +165,3 @@ http://www.drpetter.se
   drpetter@gmail.com
 
 ----------------------
-
