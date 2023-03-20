@@ -16,8 +16,8 @@ static void error (const char *file, unsigned int line, const char *msg)
 typedef Uint32 DWORD;
 typedef Uint16 WORD;
 
-#define DIK_SPACE SDLK_SPACE
-#define DIK_RETURN SDLK_RETURN
+#define DIK_SPACE SDL_SCANCODE_SPACE
+#define DIK_RETURN SDL_SCANCODE_RETURN
 #define DDK_WINDOW 0
 
 #define hWndMain 0
@@ -25,7 +25,7 @@ typedef Uint16 WORD;
 
 #define Sleep(x) SDL_Delay(x)
 
-static bool keys[SDLK_LAST];
+static SDL_Keycode keys[SDL_NUM_SCANCODES];
 
 void ddkInit();      // Will be called on startup
 bool ddkCalcFrame(); // Will be called every frame, return true to continue running or false to quit
@@ -37,7 +37,7 @@ public:
 	~DPInput() {}
 	static void Update () {}
 
-	static bool KeyPressed(SDLKey key)
+	static bool KeyPressed(SDL_Scancode key)
 	{
 		bool r = keys[key];
 		keys[key] = false;
@@ -214,10 +214,11 @@ static void loop (void)
 			switch (e.type) {
 				case SDL_QUIT:
 					return;
-	
-				case SDL_KEYDOWN:
-					keys[e.key.keysym.sym] = true;
-	
+
+      case SDL_KEYDOWN:
+        keys[e.key.keysym.scancode] = true;
+        break;
+
 				default: break;
 			}
 		}
