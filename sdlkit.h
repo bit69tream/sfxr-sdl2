@@ -125,8 +125,6 @@ static void ddkSetMode (int width, int height, int bpp, int refreshrate, int ful
 #include <string.h>
 #include <malloc.h>
 
-#if GTK_CHECK_VERSION(3,0,0)
-
 static bool load_file (char *fname)
 {
 	char *fn;
@@ -134,8 +132,8 @@ static bool load_file (char *fname)
 	GtkWidget *dialog = gtk_file_chooser_dialog_new("Load a file!",
 	                                                NULL,
 	                                                GTK_FILE_CHOOSER_ACTION_OPEN,
-	                                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-	                                                GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
+	                                                "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_Open", GTK_RESPONSE_ACCEPT,
 	                                                NULL
 	                                                );
 
@@ -161,8 +159,8 @@ static bool save_file (char *fname)
 	GtkWidget *dialog = gtk_file_chooser_dialog_new("Save a file!",
 	                                                NULL,
 	                                                GTK_FILE_CHOOSER_ACTION_SAVE,
-	                                                GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
-	                                                GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT,
+	                                                "_Cancel", GTK_RESPONSE_CANCEL,
+	                                                "_Save", GTK_RESPONSE_ACCEPT,
 	                                                NULL
 	                                                );
 
@@ -185,35 +183,6 @@ static bool save_file (char *fname)
 
 #define FileSelectorLoad(x,file,y) load_file(file)
 #define FileSelectorSave(x,file,y) save_file(file)
-
-#else // gtk+-2.0
-
-static char *gtkfilename;
-
-static void selected_file (GtkWidget *button, GtkFileSelection *fs)
-{
-	strncpy(gtkfilename, gtk_file_selection_get_filename(fs), 255);
-	gtkfilename[255] = 0;
-	gtk_widget_destroy(GTK_WIDGET(fs));
-	gtk_main_quit();
-}
-
-static bool select_file (char *buf)
-{
-	gtkfilename = buf;
-	GtkWidget *dialog = gtk_file_selection_new("Let's file selection time, for enjoy!");
-	g_signal_connect(G_OBJECT(dialog), "destroy", G_CALLBACK(gtk_main_quit), NULL);
-	g_signal_connect(G_OBJECT(GTK_FILE_SELECTION(dialog)->ok_button), "clicked", G_CALLBACK(selected_file), G_OBJECT(dialog));
-	g_signal_connect_swapped(G_OBJECT(GTK_FILE_SELECTION(dialog)->cancel_button), "clicked", G_CALLBACK(gtk_widget_destroy), G_OBJECT(dialog));
-	gtk_widget_show(GTK_WIDGET(dialog));
-	gtk_main();
-	return *gtkfilename;
-}
-
-#define FileSelectorLoad(x,file,y) select_file(file)
-#define FileSelectorSave(x,file,y) select_file(file)
-
-#endif
 
 static void sdlquit ()
 {
