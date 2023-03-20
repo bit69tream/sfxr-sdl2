@@ -53,7 +53,10 @@ static int mouse_x, mouse_y, mouse_px, mouse_py;
 static bool mouse_left = false, mouse_right = false, mouse_middle = false;
 static bool mouse_leftclick = false, mouse_rightclick = false, mouse_middleclick = false;
 
-static SDL_Surface *sdlscreen = NULL;
+static SDL_Surface *sdlsurface = nullptr;
+static SDL_Window *sdlwindow = nullptr;
+static SDL_Renderer *sdlrenderer = nullptr;
+static SDL_Texture *sdltexture = nullptr;
 
 static void sdlupdate ()
 {
@@ -73,21 +76,49 @@ static void sdlupdate ()
 
 static bool ddkLock ()
 {
-	SDL_LockSurface(sdlscreen);
-	ddkpitch = sdlscreen->pitch / (sdlscreen->format->BitsPerPixel == 32 ? 4 : 2);
-	ddkscreen16 = (Uint16*)(sdlscreen->pixels);
-	ddkscreen32 = (Uint32*)(sdlscreen->pixels);
+	SDL_LockSurface(sdlsurface);
+	ddkpitch = sdlsurface->pitch / (sdlsurface->format->BitsPerPixel == 32 ? 4 : 2);
+	ddkscreen16 = (Uint16*)(sdlsurface->pixels);
+	ddkscreen32 = (Uint32*)(sdlsurface->pixels);
+
+  // NOTE: it appears that nobody ever checks the result of this
+  // function, so idk
+  return true;
 }
 
 static void ddkUnlock ()
 {
-	SDL_UnlockSurface(sdlscreen);
+	SDL_UnlockSurface(sdlsurface);
 }
 
+// https://wiki.libsdl.org/SDL2/MigrationGuide
 static void ddkSetMode (int width, int height, int bpp, int refreshrate, int fullscreen, const char *title)
 {
-	VERIFY(sdlscreen = SDL_SetVideoMode(width, height, bpp, fullscreen ? SDL_FULLSCREEN : 0));
-	SDL_WM_SetCaption(title, title);
+  sdlwindow = SDL_CreateWindow(title,
+                               SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                               width, height,
+                               fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+  VERIFY(sdlwindow);
+
+  sdlrenderer = SDL_CreateRenderer(sdlwindow, -1, SDL_RENDERER_ACCELERATED);
+  VERIFY(sdlrenderer);
+
+  SDL_RenderSetLogicalSize(sdlrenderer, width, height);
+
+  sdlsurface = SDL_CreateRGBSurface(0, width, height, bpp,
+                                    0x00FF0000,
+                                    0x0000FF00,
+                                    0x000000FF,
+                                    0xFF000000);
+
+  VERIFY(sdlsurface);
+
+  sdltexture = SDL_CreateTexture(sdlrenderer,
+                                 SDL_PIXELFORMAT_ARGB8888,
+                                 SDL_TEXTUREACCESS_STREAMING,
+                                 width, height);
+
+  VERIFY(sdltexture);
 }
 
 #include <gtk/gtk.h>
@@ -95,7 +126,6 @@ static void ddkSetMode (int width, int height, int bpp, int refreshrate, int ful
 #include <malloc.h>
 
 #if GTK_CHECK_VERSION(3,0,0)
-
 
 static bool load_file (char *fname)
 {
@@ -188,6 +218,10 @@ static bool select_file (char *buf)
 static void sdlquit ()
 {
 	ddkFree();
+
+  SDL_DestroyTexture(sdltexture);
+  SDL_DestroyRenderer(sdlrenderer);
+  SDL_DestroyWindow(sdlwindow);
 	SDL_Quit();
 }
 
@@ -195,14 +229,17 @@ static void sdlinit ()
 {
 	SDL_Surface *icon;
 	VERIFY(!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO));
-	icon = SDL_LoadBMP("/usr/share/sfxr/sfxr.bmp");
-	if (!icon)
-		icon = SDL_LoadBMP("sfxr.bmp");
-	if (icon)
-		SDL_WM_SetIcon(icon, NULL);
-	atexit(sdlquit);
-	memset(keys, 0, sizeof(keys));
+
 	ddkInit();
+
+  icon = SDL_LoadBMP("/usr/share/sfxr/sfxr.bmp");
+	if (!icon) {
+    icon = SDL_LoadBMP("sfxr.bmp");
+  }
+	if (icon) {
+    SDL_SetWindowIcon(sdlwindow, icon);
+  }
+	atexit(sdlquit);
 }
 
 static void loop (void)
@@ -228,7 +265,10 @@ static void loop (void)
 		if (!ddkCalcFrame())
 			return;
 
-		SDL_Flip(sdlscreen);
+    SDL_UpdateTexture(sdltexture, NULL, sdlsurface->pixels, 640 * sizeof (Uint32));
+    SDL_RenderClear(sdlrenderer);
+    SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
+    SDL_RenderPresent(sdlrenderer);
 	}
 }
 
